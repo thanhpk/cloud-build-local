@@ -138,9 +138,10 @@ func run(ctx context.Context, source string) error {
 
 	// Get the ProjectId to feed both the build and the metadata server.
 	// This command uses a runner without dryrun to return the real project.
-	projectInfo, err := gcloud.ProjectInfo(ctx, &runner.RealRunner{})
-	if err != nil {
-		return fmt.Errorf("Error getting project information from gcloud: %v", err)
+
+	projectInfo := metadata.ProjectInfo{
+		ProjectID: "subiz-version-4",
+		ProjectNum: 457995922934,
 	}
 	buildConfig.ProjectId = projectInfo.ProjectID
 
