@@ -22,16 +22,12 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
-
-	"github.com/spf13/afero"
-	computeMetadata "cloud.google.com/go/compute/metadata"
-	"golang.org/x/oauth2"
-	"github.com/pborman/uuid"
 
 	"github.com/GoogleCloudPlatform/cloud-build-local/build"
 	"github.com/GoogleCloudPlatform/cloud-build-local/common"
@@ -39,7 +35,9 @@ import (
 	"github.com/GoogleCloudPlatform/cloud-build-local/gcloud"
 	"github.com/GoogleCloudPlatform/cloud-build-local/metadata"
 	"github.com/GoogleCloudPlatform/cloud-build-local/runner"
-	"github.com/GoogleCloudPlatform/cloud-build-local/volume"
+	"github.com/otiai10/copy"
+	"github.com/pborman/uuid"
+	"github.com/spf13/afero"
 )
 
 const (
@@ -109,6 +107,19 @@ func main() {
 	}
 }
 
+func CopyDir(src string) string {
+	dir, err := ioutil.TempDir("/tmp", "cloudbuild")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if err := copy.Copy(src, dir); err != nil {
+		log.Fatalf("COPY FILE ERROR %v", err)
+	}
+
+	return dir
+}
+
 // run method is used to encapsulate the local builder process, being
 // able to return errors to the main function which will then panic. So the
 // run function can probably run all the defer functions in any case.
@@ -140,11 +151,10 @@ func run(ctx context.Context, source string) error {
 	// This command uses a runner without dryrun to return the real project.
 
 	projectInfo := metadata.ProjectInfo{
-		ProjectID: "subiz-version-4",
+		ProjectID:  "subiz-version-4",
 		ProjectNum: 457995922934,
 	}
 	buildConfig.ProjectId = projectInfo.ProjectID
-
 	substMap := make(map[string]string)
 	if *substitutions != "" {
 		substMap, err = common.ParseSubstitutionsFlag(*substitutions)
@@ -152,18 +162,13 @@ func run(ctx context.Context, source string) error {
 			return fmt.Errorf("Error parsing substitutions flag: %v", err)
 		}
 	}
-
 	if err = common.SubstituteAndValidate(buildConfig, substMap); err != nil {
 		return fmt.Errorf("Error merging substitutions and validating build: %v", err)
 	}
 
 	// Create a volume, a helper container to copy the source, and defer cleaning.
-	volumeName := fmt.Sprintf("%s%s", volumeNamePrefix, uuid.New())
+	workspacepath := ""
 	if !*dryRun {
-		vol := volume.New(volumeName, r)
-		if err := vol.Setup(ctx); err != nil {
-			return fmt.Errorf("Error creating docker volume: %v", err)
-		}
 		if source != "" {
 			// If the source is a directory, only copy the inner content.
 			if isDir, err := isDirectory(source); err != nil {
@@ -171,87 +176,16 @@ func run(ctx context.Context, source string) error {
 			} else if isDir {
 				source = filepath.Clean(source) + "/."
 			}
-			if err := vol.Copy(ctx, source); err != nil {
-				return fmt.Errorf("Error copying source to docker volume: %v", err)
-			}
+
+			workspacepath = CopyDir(source)
+			defer os.RemoveAll(workspacepath) // clean up
 		}
-		defer vol.Close(ctx)
-		if *writeWorkspace != "" {
-			defer vol.Export(ctx, *writeWorkspace)
-		}
+		//if *writeWorkspace != "" {
+		//defer vol.Export(ctx, *writeWorkspace)
+		//}
 	}
 
-	b := build.New(r, *buildConfig, nil /* TokenSource */, stdoutLogger{}, volumeName, afero.NewOsFs(), true, *push, *dryRun)
-
-	// Do not run the spoofed metadata server on a dryrun.
-	if !*dryRun {
-		// Set initial Docker credentials.
-		tok, err := gcloud.AccessToken(ctx, r)
-		if err != nil {
-			return fmt.Errorf("Error getting access token to set docker credentials: %v", err)
-		}
-		if err := b.SetDockerAccessToken(ctx, tok.AccessToken); err != nil {
-			return fmt.Errorf("Error setting docker credentials: %v", err)
-		}
-		b.TokenSource = oauth2.StaticTokenSource(&oauth2.Token{
-			AccessToken: tok.AccessToken,
-		})
-
-		// On GCE, do not create a spoofed metadata server, use the existing one.
-		// The cloudbuild network is still needed, with a private subnet.
-		if computeMetadata.OnGCE() {
-			if err := metadata.CreateCloudbuildNetwork(ctx, r, "172.22.0.0/16"); err != nil {
-				return fmt.Errorf("Error creating network: %v", err)
-			}
-			defer metadata.CleanCloudbuildNetwork(ctx, r)
-		} else {
-			if err := metadata.StartLocalServer(ctx, r, metadataImageName); err != nil {
-				return fmt.Errorf("Failed to start spoofed metadata server: %v", err)
-			}
-			log.Println("Started spoofed metadata server")
-			metadataUpdater := metadata.RealUpdater{Local: true}
-			defer metadataUpdater.Stop(ctx, r)
-
-			// Feed the project info to the metadata server.
-			metadataUpdater.SetProjectInfo(projectInfo)
-
-			go supplyTokenToMetadata(ctx, metadataUpdater, r, stopchan)
-		}
-
-		// Write docker credentials for GCR. This writes the initial
-		// ~/.docker/config.json, which is made available to build steps, and keeps
-		// a fresh token available. Note that the user could `gcloud auth` to
-		// switch accounts mid-build, and we wouldn't notice that until token
-		// refresh; switching accounts mid-build is not supported.
-		go func(tok *metadata.Token, stopchan <-chan struct{}) {
-			for {
-				refresh := time.Duration(0)
-				if tok != nil {
-					refresh = common.RefreshDuration(tok.Expiry)
-				}
-
-				select {
-				case <-time.After(refresh):
-					var err error
-					tok, err = gcloud.AccessToken(ctx, r)
-					if err != nil {
-						log.Printf("Error getting access token to update docker credentials: %v\n", err)
-						continue
-					}
-
-					if err := b.UpdateDockerAccessToken(ctx, tok.AccessToken); err != nil {
-						log.Printf("Error updating docker credentials: %v", err)
-					}
-
-					b.TokenSource = oauth2.StaticTokenSource(&oauth2.Token{
-						AccessToken: tok.AccessToken,
-					})
-				case <-stopchan:
-					return
-				}
-			}
-		}(tok, stopchan)
-	}
+	b := build.New(r, *buildConfig, nil /* TokenSource */, stdoutLogger{}, workspacepath, afero.NewOsFs(), true, *push, *dryRun)
 
 	b.Start(ctx)
 	<-b.Done
