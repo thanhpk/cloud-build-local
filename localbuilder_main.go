@@ -128,20 +128,6 @@ func run(ctx context.Context, source string) error {
 		return fmt.Errorf("Error cleaning: %v", err)
 	}
 
-	// Check installed docker versions.
-	if !*dryRun {
-		dockerServerVersion, dockerClientVersion, err := dockerVersions(ctx, r)
-		if err != nil {
-			return fmt.Errorf("Error getting local docker versions: %v", err)
-		}
-		if dockerServerVersion != gcbDockerVersion {
-			log.Printf("Warning: The server docker version installed (%s) is different from the one used in GCB (%s)", dockerServerVersion, gcbDockerVersion)
-		}
-		if dockerClientVersion != gcbDockerVersion {
-			log.Printf("Warning: The client docker version installed (%s) is different from the one used in GCB (%s)", dockerClientVersion, gcbDockerVersion)
-		}
-	}
-
 	// Load config file into a build struct.
 	buildConfig, err := config.Load(*configFile)
 	if err != nil {
