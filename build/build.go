@@ -33,18 +33,18 @@ import (
 	"sync"
 	"time"
 
-	pb "google.golang.org/genproto/googleapis/devtools/cloudbuild/v1"
 	"github.com/golang/protobuf/ptypes"
+	pb "google.golang.org/genproto/googleapis/devtools/cloudbuild/v1"
 
 	"github.com/GoogleCloudPlatform/cloud-build-local/common"
 	"github.com/GoogleCloudPlatform/cloud-build-local/gsutil"
 	"github.com/GoogleCloudPlatform/cloud-build-local/logger"
 	"github.com/GoogleCloudPlatform/cloud-build-local/runner"
 	"github.com/GoogleCloudPlatform/cloud-build-local/volume"
-	"github.com/spf13/afero"
-	"google.golang.org/api/cloudkms/v1"
-	"golang.org/x/oauth2"
 	"github.com/pborman/uuid"
+	"github.com/spf13/afero"
+	"golang.org/x/oauth2"
+	"google.golang.org/api/cloudkms/v1"
 )
 
 const (
@@ -58,7 +58,6 @@ const (
 	// maxPushRetries is the maximum number of times we retry pushing an image
 	// in the face of gcr.io DNS lookup errors.
 	maxPushRetries = 10
-
 )
 
 var (
@@ -137,7 +136,6 @@ type Build struct {
 	// fs is the filesystem to use. In real builds, this is the OS
 	// filesystem, in tests it's an in-memory filesystem.
 	fs afero.Fs
-
 }
 
 // TimingInfo holds timing information for build execution phases.
@@ -711,7 +709,7 @@ func (b *Build) dockerPush(ctx context.Context, tag string) ([]imageDigest, erro
 
 // runWithScrapedLogging executes the command and returns the output (stdin, stderr), with logging.
 func (b *Build) runWithScrapedLogging(ctx context.Context, logPrefix string, cmd []string) (string, error) {
-	
+
 	var buf bytes.Buffer
 	outWriter := io.MultiWriter(b.Log.MakeWriter(logPrefix+":STDOUT", -1, true), &buf)
 	errWriter := io.MultiWriter(b.Log.MakeWriter(logPrefix+":STDERR", -1, false), &buf)
@@ -721,7 +719,7 @@ func (b *Build) runWithScrapedLogging(ctx context.Context, logPrefix string, cmd
 
 // runAndScrape executes the command and returns the output (stdin, stderr), without logging.
 func (b *Build) runAndScrape(ctx context.Context, cmd []string) (string, error) {
-	
+
 	var buf bytes.Buffer
 	outWriter := io.Writer(&buf)
 	errWriter := io.Writer(&buf)
@@ -817,7 +815,6 @@ func (b *Build) getKMSClient() (kms, error) {
 		return b.kms, nil
 	}
 
-	
 	// automatically gets (and refreshes) credentials from the metadata server
 	// when spoofing metadata works by IP. Until then, we'll just fetch the token
 	// and pass it to all HTTP requests.
@@ -856,7 +853,7 @@ func (r realKMS) Decrypt(key, enc string) (string, error) {
 func (b *Build) timeAndRunStep(ctx context.Context, idx int, waitChans []chan struct{}, done chan<- struct{}, errors chan<- error) {
 	// Wait for preceding steps to finish before executing.
 	// If a preceding step fails, the context will cancel and waiting goroutines will die.
-	
+
 	for _, ch := range waitChans {
 		select {
 		case <-ch:
@@ -967,7 +964,6 @@ func (b *Build) runStep(ctx context.Context, timeout time.Duration, idx int) err
 		defer b.Log.WriteMainEntry(fmt.Sprintf("Finished %s", stepIdentifier))
 	}
 
-	
 	outWriter := b.Log.MakeWriter(fmt.Sprintf("%s", stepIdentifier), idx, true)
 	errWriter := b.Log.MakeWriter(fmt.Sprintf("%s", stepIdentifier), idx, false)
 
@@ -1032,10 +1028,10 @@ func (b *Build) runStep(ctx context.Context, timeout time.Duration, idx int) err
 		defer cancel()
 	}
 
+	// fmt.Println("RUN ARGS", args)
 	buildErr := b.Runner.Run(ctx, args, nil, outWriter, errWriter, "")
 	return buildErr
 }
-
 
 func (b *Build) runBuildSteps(ctx context.Context) error {
 	// Create BuildTotal TimeSpan with Start time. End time has zero value.
@@ -1052,7 +1048,7 @@ func (b *Build) runBuildSteps(ctx context.Context) error {
 	}()
 
 	// Create all the volumes referenced by all steps and defer cleanup.
-	
+
 	allVolumes := map[string]bool{}
 	for _, step := range b.Request.Steps {
 		for _, v := range step.Volumes {
@@ -1184,10 +1180,10 @@ func (b *Build) dockerRunArgs(stepDir, stepOutputDir string, idx int) []string {
 		"--env", "HOME="+homeDir,
 
 		// Connect to the network for metadata.
-		"--network", "cloudbuild",
+		// "--network", "cloudbuild",
+		"--volume", "/tmp:/tmp",
 		// Run in privileged mode per discussion in b/31267381.
 		"--privileged",
-
 	)
 	if !b.local {
 		args = append(args,
@@ -1323,7 +1319,7 @@ func (b *Build) pushArtifacts(ctx context.Context) error {
 
 	// Only verify that the GCS bucket exists.
 	// If they specify a directory path in the bucket that doesn't exist, gsutil will create it for them.
-	
+
 	location := b.Request.Artifacts.Objects.Location
 	bucket := extractGCSBucket(location)
 	if err := b.gsutilHelper.VerifyBucket(ctx, bucket); err != nil {
