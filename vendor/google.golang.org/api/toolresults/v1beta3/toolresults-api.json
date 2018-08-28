@@ -15,7 +15,7 @@
   "description": "Reads and publishes results from Firebase Test Lab.",
   "discoveryVersion": "v1",
   "documentationLink": "https://firebase.google.com/docs/test-lab/",
-  "etag": "\"-iA1DTNe4s-I6JZXPt1t1Ypy8IU/pJZ9xzwm9qcIyF137hcKzZoj8W8\"",
+  "etag": "\"J3WqvAcMk4eQjJXvfSI4Yr8VouA/mEuuuN8nb5iL8wTNkkXQ6-1VwRs\"",
   "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -60,12 +60,12 @@
       "type": "boolean"
     },
     "quotaUser": {
-      "description": "Available to use for quota purposes for server-side applications. Can be any arbitrary string assigned to a user, but should not exceed 40 characters. Overrides userIp if both are provided.",
+      "description": "An opaque string that represents a user for quota purposes. Must not exceed 40 characters.",
       "location": "query",
       "type": "string"
     },
     "userIp": {
-      "description": "IP address of the site where the request originates. Use this if you want to enforce per-user limits.",
+      "description": "Deprecated. Please use quotaUser instead.",
       "location": "query",
       "type": "string"
     }
@@ -1161,7 +1161,7 @@
       }
     }
   },
-  "revision": "20180417",
+  "revision": "20180816",
   "rootUrl": "https://www.googleapis.com/",
   "schemas": {
     "AndroidAppInfo": {
@@ -2055,16 +2055,8 @@
       "description": "A stacktrace.",
       "id": "StackTrace",
       "properties": {
-        "clusterId": {
-          "description": "Exception cluster ID",
-          "type": "string"
-        },
         "exception": {
           "description": "The stack trace message.\n\nRequired",
-          "type": "string"
-        },
-        "reportId": {
-          "description": "Exception report ID",
           "type": "string"
         }
       },
@@ -2260,6 +2252,20 @@
       "description": "An issue detected occurring during a test execution.",
       "id": "TestIssue",
       "properties": {
+        "category": {
+          "description": "Category of issue. Required.",
+          "enum": [
+            "common",
+            "robo",
+            "unspecifiedCategory"
+          ],
+          "enumDescriptions": [
+            "",
+            "",
+            ""
+          ],
+          "type": "string"
+        },
         "errorMessage": {
           "description": "A brief human-readable message describing the issue. Required.",
           "type": "string"
@@ -2269,10 +2275,12 @@
           "enum": [
             "info",
             "severe",
+            "suggestion",
             "unspecifiedSeverity",
             "warning"
           ],
           "enumDescriptions": [
+            "",
             "",
             "",
             "",
@@ -2288,18 +2296,32 @@
           "description": "Type of issue. Required.",
           "enum": [
             "anr",
+            "availableDeepLinks",
             "compatibleWithOrchestrator",
             "completeRoboScriptExecution",
+            "encounteredLoginScreen",
+            "encounteredNonAndroidUiWidgetScreen",
             "failedToInstall",
             "fatalException",
             "incompleteRoboScriptExecution",
+            "iosCrash",
+            "iosException",
             "launcherActivityNotFound",
             "nativeCrash",
+            "nonSdkApiUsageViolation",
+            "performedGoogleLogin",
             "startActivityNotFound",
             "unspecifiedType",
             "unusedRoboDirective"
           ],
           "enumDescriptions": [
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
             "",
             "",
             "",

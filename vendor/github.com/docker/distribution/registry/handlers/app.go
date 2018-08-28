@@ -58,10 +58,11 @@ type App struct {
 
 	Config *configuration.Configuration
 
-	router           *mux.Router                 // main application router, configured with dispatchers
-	driver           storagedriver.StorageDriver // driver maintains the app global storage driver instance.
-	registry         distribution.Namespace      // registry is the primary registry backend for the app instance.
-	accessController auth.AccessController       // main access controller for application
+	router           *mux.Router                    // main application router, configured with dispatchers
+	driver           storagedriver.StorageDriver    // driver maintains the app global storage driver instance.
+	registry         distribution.Namespace         // registry is the primary registry backend for the app instance.
+	repoRemover      distribution.RepositoryRemover // repoRemover provides ability to delete repos
+	accessController auth.AccessController          // main access controller for application
 
 	// httpHost is a parsed representation of the http.host parameter from
 	// the configuration. Only the Scheme and Host fields are used.
@@ -175,6 +176,10 @@ func NewApp(ctx context.Context, config *configuration.Configuration) *App {
 	}
 
 	options = append(options, storage.Schema1SigningKey(app.trustKey))
+
+	if config.Compatibility.Schema1.Enabled {
+		options = append(options, storage.EnableSchema1)
+	}
 
 	if config.HTTP.Host != "" {
 		u, err := url.Parse(config.HTTP.Host)
@@ -319,6 +324,11 @@ func NewApp(ctx context.Context, config *configuration.Configuration) *App {
 		}
 		app.isCache = true
 		dcontext.GetLogger(app).Info("Registry configured as a proxy cache to ", config.Proxy.RemoteURL)
+	}
+	var ok bool
+	app.repoRemover, ok = app.registry.(distribution.RepositoryRemover)
+	if !ok {
+		dcontext.GetLogger(app).Warnf("Registry does not implement RempositoryRemover. Will not be able to delete repos and tags")
 	}
 
 	return app
@@ -696,8 +706,9 @@ func (app *App) dispatcher(dispatch dispatchFunc) http.Handler {
 			}
 
 			// assign and decorate the authorized repository with an event bridge.
-			context.Repository = notifications.Listen(
+			context.Repository, context.RepositoryRemover = notifications.Listen(
 				repository,
+				context.App.repoRemover,
 				app.eventBridge(context, r))
 
 			context.Repository, err = applyRepoMiddleware(app, context.Repository, app.Config.Middleware["repository"])
@@ -746,7 +757,7 @@ func (app *App) logError(ctx context.Context, errors errcode.Errors) {
 		case errcode.Error:
 			e, _ := e1.(errcode.Error)
 			c = context.WithValue(ctx, errCodeKey{}, e.Code)
-			c = context.WithValue(c, errMessageKey{}, e.Code.Message())
+			c = context.WithValue(c, errMessageKey{}, e.Message)
 			c = context.WithValue(c, errDetailKey{}, e.Detail)
 		case errcode.ErrorCode:
 			e, _ := e1.(errcode.ErrorCode)

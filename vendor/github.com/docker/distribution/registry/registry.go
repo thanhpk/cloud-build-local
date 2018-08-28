@@ -139,8 +139,6 @@ func (registry *Registry) ListenAndServe() error {
 				tls.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,
 				tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
 				tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
-				tls.TLS_RSA_WITH_AES_128_CBC_SHA,
-				tls.TLS_RSA_WITH_AES_256_CBC_SHA,
 			},
 		}
 
@@ -239,13 +237,6 @@ func configureReporting(app *handlers.App) http.Handler {
 // configureLogging prepares the context with a logger using the
 // configuration.
 func configureLogging(ctx context.Context, config *configuration.Configuration) (context.Context, error) {
-	if config.Log.Level == "" && config.Log.Formatter == "" {
-		// If no config for logging is set, fallback to deprecated "Loglevel".
-		log.SetLevel(logLevel(config.Loglevel))
-		ctx = dcontext.WithLogger(ctx, dcontext.GetLogger(ctx))
-		return ctx, nil
-	}
-
 	log.SetLevel(logLevel(config.Log.Level))
 
 	formatter := config.Log.Formatter

@@ -9,7 +9,7 @@
     }
   },
   "basePath": "",
-  "baseUrl": "https://firebasedynamiclinks-ipv6.googleapis.com/",
+  "baseUrl": "https://firebasedynamiclinks.googleapis.com/",
   "batchPath": "batch",
   "canonicalName": "Firebase Dynamic Links",
   "description": "Programmatically creates and manages Firebase Dynamic Links.",
@@ -59,11 +59,6 @@
       "location": "query",
       "type": "string"
     },
-    "bearer_token": {
-      "description": "OAuth bearer token.",
-      "location": "query",
-      "type": "string"
-    },
     "callback": {
       "description": "JSONP",
       "location": "query",
@@ -83,12 +78,6 @@
       "description": "OAuth 2.0 token for the current user.",
       "location": "query",
       "type": "string"
-    },
-    "pp": {
-      "default": "true",
-      "description": "Pretty-print response.",
-      "location": "query",
-      "type": "boolean"
     },
     "prettyPrint": {
       "default": "true",
@@ -211,8 +200,8 @@
       }
     }
   },
-  "revision": "20180403",
-  "rootUrl": "https://firebasedynamiclinks-ipv6.googleapis.com/",
+  "revision": "20180620",
+  "rootUrl": "https://firebasedynamiclinks.googleapis.com/",
   "schemas": {
     "AnalyticsInfo": {
       "description": "Tracking parameters supported by Dynamic Link.",
@@ -421,13 +410,15 @@
             "DYNAMIC_LINK_PLATFORM_UNSPECIFIED",
             "ANDROID",
             "IOS",
-            "DESKTOP"
+            "DESKTOP",
+            "OTHER"
           ],
           "enumDescriptions": [
             "Unspecified platform.",
             "Represents Android platform.\nAll apps and browsers on Android are classfied in this category.",
             "Represents iOS platform.\nAll apps and browsers on iOS are classfied in this category.",
-            "Represents desktop.\nNote: other platforms like Windows, Blackberry, Amazon fall into this\ncategory."
+            "Represents desktop.",
+            "Platforms are not categorized as Android/iOS/Destop fall into here."
           ],
           "type": "string"
         }
@@ -680,6 +671,20 @@
         },
         "matchMessage": {
           "description": "Describes why match failed, ie: \"discarded due to low confidence\".\nThis message will be publicly visible.",
+          "type": "string"
+        },
+        "requestIpVersion": {
+          "description": "Which IP version the request was made from.",
+          "enum": [
+            "UNKNOWN_IP_VERSION",
+            "IP_V4",
+            "IP_V6"
+          ],
+          "enumDescriptions": [
+            "Unset.",
+            "Request made from an IPv4 IP address.",
+            "Request made from an IPv6 IP address."
+          ],
           "type": "string"
         },
         "requestedLink": {
