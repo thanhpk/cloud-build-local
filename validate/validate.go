@@ -27,7 +27,7 @@ import (
 
 	pb "google.golang.org/genproto/googleapis/devtools/cloudbuild/v1"
 	"github.com/golang/protobuf/ptypes"
-	"github.com/GoogleCloudPlatform/cloud-build-local/subst"
+	"github.com/thanhpk/cloud-build-local/subst"
 	"github.com/docker/distribution/reference"
 )
 
@@ -42,7 +42,7 @@ const (
 	maxNumEnvs        = 100  // max number of envs per step.
 	maxEnvLength      = 1000 // max length of env value.
 	maxNumArgs        = 100  // max number of args per step.
-	
+
 	maxArgLength = 4000 // max length of arg value.
 	maxDirLength = 1000 // max length of dir value.
 	maxNumImages = 100  // max number of images.
@@ -336,7 +336,7 @@ func CheckArtifacts(b *pb.Build) error {
 			pathExists[p] = true
 
 			// Paths with whitespace are invalid.
-			
+
 			for _, ch := range p {
 				if unicode.IsSpace(ch) {
 					return fmt.Errorf(".artifacts.paths %q contains whitespace", p)
@@ -348,7 +348,7 @@ func CheckArtifacts(b *pb.Build) error {
 		}
 	}
 
-	
+
 	if len(b.GetArtifacts().GetImages()) > 0 {
 		b.Images = b.GetArtifacts().GetImages()
 	}

@@ -41,7 +41,7 @@ import (
 
 	"golang.org/x/oauth2"
 
-	"github.com/GoogleCloudPlatform/cloud-build-local/runner"
+	"github.com/thanhpk/cloud-build-local/runner"
 )
 
 const (

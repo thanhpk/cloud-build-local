@@ -24,21 +24,21 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"runtime"
 	"reflect"
 	"regexp"
+	"runtime"
 	"strings"
 	"sync"
 	"testing"
 	"time"
 
-	durpb "github.com/golang/protobuf/ptypes/duration"
 	"github.com/golang/protobuf/ptypes"
-	"github.com/GoogleCloudPlatform/cloud-build-local/gsutil"
-	"github.com/GoogleCloudPlatform/cloud-build-local/runner"
-	"github.com/spf13/afero"
-	"golang.org/x/oauth2"
+	durpb "github.com/golang/protobuf/ptypes/duration"
 	"github.com/pborman/uuid"
+	"github.com/spf13/afero"
+	"github.com/thanhpk/cloud-build-local/gsutil"
+	"github.com/thanhpk/cloud-build-local/runner"
+	"golang.org/x/oauth2"
 
 	pb "google.golang.org/genproto/googleapis/devtools/cloudbuild/v1"
 )
@@ -191,7 +191,7 @@ func (r *mockRunner) gsutil(ctx context.Context, args []string, in io.Reader, ou
 }
 
 func (r *mockRunner) Run(ctx context.Context, args []string, in io.Reader, out, err io.Writer, _ string) error {
-	
+
 	r.mu.Lock()
 	r.commands = append(r.commands, strings.Join(args, " "))
 	r.mu.Unlock()
@@ -1582,7 +1582,7 @@ func TestBuildTiming(t *testing.T) {
 
 			if tc.hasError {
 				// If there is an error, just verify the order of the step timings that exist.
-				
+
 				// We do not need to check the WaitFor field below because the error test case has consecutive steps.
 				prevStep := buildStepTimes[0]
 				for i := 1; i < len(buildStepTimes); i++ {
@@ -1735,7 +1735,7 @@ func TestBuildTimingOutOfOrder(t *testing.T) {
 }
 
 func TestPushImagesTiming(t *testing.T) {
-	
+
 	timeNow = fakeTimeNow
 	defer func() { timeNow = time.Now }()
 	ctx := context.Background()
@@ -2642,7 +2642,6 @@ func TestWorkdir(t *testing.T) {
 		}
 	}
 }
-
 
 func TestOsTempDir(t *testing.T) {
 	defer func() { runtimeGOOS = runtime.GOOS }()

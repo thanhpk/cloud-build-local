@@ -13,7 +13,7 @@
 // limitations under the License.
 
 // Package main runs the gcb local builder.
-package main // import "github.com/GoogleCloudPlatform/cloud-build-local"
+package main // import "github.com/thanhpk/cloud-build-local"
 
 import (
 	"bufio"
@@ -29,15 +29,15 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GoogleCloudPlatform/cloud-build-local/build"
-	"github.com/GoogleCloudPlatform/cloud-build-local/common"
-	"github.com/GoogleCloudPlatform/cloud-build-local/config"
-	"github.com/GoogleCloudPlatform/cloud-build-local/gcloud"
-	"github.com/GoogleCloudPlatform/cloud-build-local/metadata"
-	"github.com/GoogleCloudPlatform/cloud-build-local/runner"
 	"github.com/otiai10/copy"
 	"github.com/pborman/uuid"
 	"github.com/spf13/afero"
+	"github.com/thanhpk/cloud-build-local/build"
+	"github.com/thanhpk/cloud-build-local/common"
+	"github.com/thanhpk/cloud-build-local/config"
+	"github.com/thanhpk/cloud-build-local/gcloud"
+	"github.com/thanhpk/cloud-build-local/metadata"
+	"github.com/thanhpk/cloud-build-local/runner"
 )
 
 const (

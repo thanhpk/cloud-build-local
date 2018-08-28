@@ -26,8 +26,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GoogleCloudPlatform/cloud-build-local/metadata"
-	"github.com/GoogleCloudPlatform/cloud-build-local/runner"
+	"github.com/thanhpk/cloud-build-local/metadata"
+	"github.com/thanhpk/cloud-build-local/runner"
 )
 
 var (
