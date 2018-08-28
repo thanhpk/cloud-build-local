@@ -176,8 +176,9 @@ func run(ctx context.Context, source string) error {
 			} else if isDir {
 				source = filepath.Clean(source) + "/."
 			}
-
+			t := time.Now()
 			workspacepath = CopyDir(source)
+			fmt.Println("time to copy", time.Since(t))
 			defer os.RemoveAll(workspacepath) // clean up
 		}
 		//if *writeWorkspace != "" {
